@@ -14,5 +14,8 @@
 @interface FGProgress : UIView
 
 - (void)startAnimation;
+- (void)removeAnimation;
+
+@property (nonatomic, assign) BOOL isAnimating;
 
 @end

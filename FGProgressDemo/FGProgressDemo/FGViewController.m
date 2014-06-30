@@ -36,9 +36,15 @@
     // Dispose of any resources that can be recreated.
 }
 
-- (IBAction)onStartButtonAction:(id)sender
+- (IBAction)onStartButtonAction:(UIButton *)sender
 {
-    [_pro startAnimation];
+    if (_pro.isAnimating) {
+        [_pro removeAnimation];
+        [sender setTitle:@"Start" forState:UIControlStateNormal];
+    } else {
+        [_pro startAnimation];
+        [sender setTitle:@"Stop" forState:UIControlStateNormal];
+    }
 }
 
 

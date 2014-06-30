@@ -13,10 +13,8 @@
 
 @interface FGProgress ()
 {
-    NSArray *_pointsArray;
     UIView *_view;
     CGFloat _radius;
-    BOOL _isAnimating;
 }
 
 @end
@@ -34,9 +32,7 @@
         
         [self setup];
         
-        [self startAnimation];
-        
-        _pointsArray = [self createPointsArray];
+//        [self startAnimation];
     }
     return self;
 }
@@ -47,53 +43,95 @@
     _view.backgroundColor = [UIColor clearColor];
     [self addSubview:_view];
 
-    for (NSInteger count = 0; count < 8; count++) {
+    for (NSInteger count = 0; count < 6; count++) {
         CGFloat xAxis = [self xAxisAtIndex:count];
         CGFloat yAxis = [self yAxisAtIndex:count];
         UIView *subView = [[UIView alloc] initWithFrame:CGRectMake(xAxis, yAxis, _radius*2, _radius*2)];
         subView.layer.cornerRadius = _radius;
         subView.layer.masksToBounds = YES;
-        subView.backgroundColor = [UIColor redColor];
-        [self transformViewScale:subView atIndex:count];
+        subView.backgroundColor = [UIColor colorWithRed:42.0f/255 green:121.0f/255 blue:251.0f/255 alpha:1.0f];
         [_view addSubview:subView];
     }
 }
 
-#pragma mark - 动画相关方法
-
+#pragma mark - Animation
 - (void)transformViewScale:(UIView *)view atIndex:(NSInteger)index
 {
+    CATransform3D fromTransform;
+    CATransform3D toTransform;
+    CFTimeInterval beginTime = CACurrentMediaTime();
+    switch (index) {
+        case 0:
+            fromTransform = CATransform3DMakeScale(0.3f, 0.3f, 1.0f);
+            toTransform = CATransform3DMakeScale(0.05f, 0.05f, 1.0f);
+            break;
+        case 1:
+            fromTransform = CATransform3DIdentity;
+            toTransform = CATransform3DMakeScale(0.4f, 0.4f, 1.0f);
+            beginTime += 0.2f;
+            break;
+        case 2:
+            fromTransform = CATransform3DIdentity;
+            toTransform = CATransform3DIdentity;
+            break;
+        case 3:
+            fromTransform = CATransform3DIdentity;
+            toTransform = CATransform3DMakeScale(0.4f, 0.4f, 1.0f);
+            beginTime += 0.4f;
+            break;
+        case 4:
+            fromTransform = CATransform3DIdentity;
+            toTransform = CATransform3DMakeScale(0.4f, 0.4f, 1.0f);
+            beginTime += 0.8f;
+            break;
+        case 5:
+            fromTransform = CATransform3DMakeScale(0.3f, 0.3f, 1.0f);
+            toTransform = CATransform3DMakeScale(0.0f, 0.0f, 1.0f);
+            beginTime += 0.2f;
+            break;
+            
+        default:
+            fromTransform = CATransform3DIdentity;
+            toTransform = CATransform3DIdentity;
+            break;
+    }
     
+    CAKeyframeAnimation *scaleAnimation = [CAKeyframeAnimation animationWithKeyPath:@"transform"];
+    scaleAnimation.values = @[[NSValue valueWithCATransform3D:fromTransform],[NSValue valueWithCATransform3D:toTransform],[NSValue valueWithCATransform3D:fromTransform]];
+    scaleAnimation.beginTime = beginTime;
+    scaleAnimation.duration = 2.0f;
+    scaleAnimation.repeatCount = FLT_MAX;
+    [view.layer addAnimation:scaleAnimation forKey:@"scaleAnimation"];
 }
 
-//开始旋转动画
 - (void)startAnimation
 {
-    if (!_isAnimating) {
-        _isAnimating = YES;
-        [self spinTheHotWheel];
+    //旋转动画
+    CABasicAnimation* rotationAnimation = [CABasicAnimation animationWithKeyPath:@"transform.rotation.z"];
+    rotationAnimation.toValue = [NSNumber numberWithFloat: -M_PI];
+    rotationAnimation.duration = 2.0f;
+    rotationAnimation.cumulative = YES;
+    rotationAnimation.repeatCount = FLT_MAX;
+    [_view.layer addAnimation:rotationAnimation forKey:@"rotationAnimation"];
+    
+    //缩放动画
+    for (NSInteger index = 0; index < _view.subviews.count; index++) {
+        UIView *subView = [_view.subviews objectAtIndex:index];
+        [self transformViewScale:subView atIndex:index];
     }
+    
+    _isAnimating = YES;
 }
 
-//停止旋转动画
-- (void)stopAnimation
+- (void)removeAnimation
 {
+    [_view.layer removeAnimationForKey:@"rotationAnimation"];
+
+    for (UIView *subView in _view.subviews) {
+        [subView.layer removeAnimationForKey:@"scaleAnimation"];
+    }
+    
     _isAnimating = NO;
-}
-
-- (void)spinTheHotWheel
-{
-    [UIView animateWithDuration:1.0f
-                          delay:0.0f
-                        options:UIViewAnimationOptionCurveLinear
-                     animations:^{
-                         _view.transform = CGAffineTransformRotate(_view.transform, M_PI / 2);
-                     }
-                     completion: ^(BOOL finished) {
-                         if (finished && _isAnimating) {
-                             [self spinTheHotWheel];
-                         }
-                     }];
 }
 
 - (CGFloat)xAxisAtIndex:(NSInteger)index
@@ -114,54 +152,15 @@
 
 - (void)drawRect:(CGRect)rect
 {
-    CGContextRef context = UIGraphicsGetCurrentContext();
-    
-    CGContextSetRGBStrokeColor(context,10,10,10,1.0);//画笔线的颜色
-    CGContextSetLineWidth(context, 1.0);//线的宽度
-    //void CGContextAddArc(CGContextRef c,CGFloat x, CGFloat y,CGFloat radius,CGFloat startAngle,CGFloat endAngle, int clockwise)1弧度＝180°/π （≈57.3°） 度＝弧度×180°/π 360°＝360×π/180 ＝2π 弧度
-    // x,y为圆点坐标，radius半径，startAngle为开始的弧度，endAngle为 结束的弧度，clockwise 0为顺时针，1为逆时针。
-    CGContextAddArc(context, 150, 150, 150-_radius, 0, 2*M_PI, 0); //添加一个圆
-    CGContextDrawPath(context, kCGPathStroke); //绘制路径
+//    CGContextRef context = UIGraphicsGetCurrentContext();
+//    
+//    CGContextSetRGBStrokeColor(context,10,10,10,1.0);//画笔线的颜色
+//    CGContextSetLineWidth(context, 1.0);//线的宽度
+//    //void CGContextAddArc(CGContextRef c,CGFloat x, CGFloat y,CGFloat radius,CGFloat startAngle,CGFloat endAngle, int clockwise)1弧度＝180°/π （≈57.3°） 度＝弧度×180°/π 360°＝360×π/180 ＝2π 弧度
+//    // x,y为圆点坐标，radius半径，startAngle为开始的弧度，endAngle为 结束的弧度，clockwise 0为顺时针，1为逆时针。
+//    CGContextAddArc(context, 150, 150, 150-_radius, 0, 2*M_PI, 0); //添加一个圆
+//    CGContextDrawPath(context, kCGPathStroke); //绘制路径
 }
 
-
-- (NSArray *)createPointsArray
-{
-    NSMutableArray *array = [NSMutableArray array];
-    
-    float duration = 1;
-    NSInteger totalCount = 12;
-    for (NSInteger count = 0; count < totalCount; count++) {
-        [array addObject:[NSNumber numberWithFloat:count*duration/totalCount]];
-    }
-    
-    return array;
-}
-
-
-//- (void)startAnimation
-//{
-//    [UIView animateWithDuration:0.5f animations:^{
-//        if (_view.frame.size.width == 30) {
-//            _view.transform = CGAffineTransformMakeScale(0.1f, 0.1f);
-//        } else {
-//            _view.transform = CGAffineTransformMakeScale(1, 1);
-//        }        
-//    } completion:^(BOOL finished) {
-//        [self performSelector:@selector(startAnimation)
-//                   withObject:nil
-//                   afterDelay:0.2f];
-//    }];
-//}
-
-
-/*
-// Only override drawRect: if you perform custom drawing.
-// An empty implementation adversely affects performance during animation.
-- (void)drawRect:(CGRect)rect
-{
-    // Drawing code
-}
-*/
 
 @end
