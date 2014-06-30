@@ -16,6 +16,10 @@
 - (void)startAnimation;
 - (void)removeAnimation;
 
+- (void)show;
+
+- (void)dismiss;
+
 @property (nonatomic, assign) BOOL isAnimating;
 
 @end

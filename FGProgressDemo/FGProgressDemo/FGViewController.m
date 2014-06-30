@@ -23,11 +23,6 @@
 {
     [super viewDidLoad];
 	// Do any additional setup after loading the view, typically from a nib.
-    
-    
-    _pro = [[FGProgress alloc] initWithFrame:CGRectMake(10, 30, 300, 300)];
-    _pro.backgroundColor = [UIColor lightGrayColor];
-    [self.view addSubview:_pro];
 }
 
 - (void)didReceiveMemoryWarning
@@ -40,9 +35,11 @@
 {
     if (_pro.isAnimating) {
         [_pro removeAnimation];
+        [_pro removeFromSuperview];
         [sender setTitle:@"Start" forState:UIControlStateNormal];
     } else {
-        [_pro startAnimation];
+        _pro = [[FGProgress alloc] initWithFrame:CGRectMake(10, 30, 300, 300)];
+        [self.view addSubview:_pro];
         [sender setTitle:@"Stop" forState:UIControlStateNormal];
     }
 }
