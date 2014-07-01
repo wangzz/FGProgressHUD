@@ -49,7 +49,7 @@ typedef NS_ENUM(NSUInteger,FGProgressHUDMaskType) {
 };
 
 ```
-	其中，
+其中，
 
 `FGProgressHUDMaskTypeNone`允许和HUD后面的界面交互，其余两个不允许交互；
  
