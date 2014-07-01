@@ -49,12 +49,13 @@ typedef NS_ENUM(NSUInteger,FGProgressHUDMaskType) {
 };
 
 ```
+	其中，
 
-	其中，`FGProgressHUDMaskTypeNone`允许和HUD后面的界面交互，其余两个不允许交互；
-	
-	`FGProgressHUDMaskTypeBlack`会显示带黑色背景，其余两个背景为透明色；
-	
-	默认值是`FGProgressHUDMaskTypeClear`。
+`FGProgressHUDMaskTypeNone`允许和HUD后面的界面交互，其余两个不允许交互；
+ 
+`FGProgressHUDMaskTypeBlack`会显示带黑色背景，其余两个背景为透明色；
+
+`FGProgressHUDMaskTypeClear`是默认值。
 
 
 ##License
