@@ -9,11 +9,11 @@
 #import "FGProgressHUD.h"
 
 
-#define M_PI 3.14159265358979323846264338327950288
-#define DEGREE_TO_RADIAN(angle) (angle * (M_PI/180))
+#define FG_M_PI 3.14159265358979323846264338327950288
+#define FG_DEGREE_TO_RADIAN(angle) (angle * (FG_M_PI/180))
 
-#define KEY_ANIMATION_SCALE_REPEAT     @"animation.transform.repeat"
-#define KEY_ANIMATION_SCALE_ONECE      @"animation.transform.once"
+#define FG_KEY_ANIMATION_SCALE_REPEAT     @"animation.transform.repeat"
+#define FG_KEY_ANIMATION_SCALE_ONECE      @"animation.transform.once"
 
 
 @interface FGProgressHUD ()
@@ -79,7 +79,7 @@ static FGProgressHUD *sharedView;
         
         [self setup];
         
-        [self startAnimation];
+        [self registerNotifications];
     }
     return self;
 }
@@ -109,15 +109,17 @@ static FGProgressHUD *sharedView;
 - (void)dealloc
 {
     self.hudView = nil;
+    [self unregisterNotifications];
 }
 
 #pragma mark - Gets
 - (UIView *)hudView
 {
     if (!_hudView) {
-        _hudView = [[UIView alloc] initWithFrame:CGRectMake(90, 90, 120, 120)];
+        _hudView = [[UIView alloc] initWithFrame:CGRectZero];
         _hudView.backgroundColor = [UIColor clearColor];
         _hudView.autoresizingMask = (UIViewAutoresizingFlexibleBottomMargin | UIViewAutoresizingFlexibleTopMargin | UIViewAutoresizingFlexibleRightMargin | UIViewAutoresizingFlexibleLeftMargin);
+        [self setTransformForCurrentOrientation:NO];
     }
     
     return _hudView;
@@ -146,11 +148,11 @@ static FGProgressHUD *sharedView;
         UIView *subView = [self.hudView.subviews objectAtIndex:index];
         
         CAAnimation *repeatAnimation = [self repeatAnimationAtIndex:index];
-        [subView.layer addAnimation:repeatAnimation forKey:KEY_ANIMATION_SCALE_REPEAT];
+        [subView.layer addAnimation:repeatAnimation forKey:FG_KEY_ANIMATION_SCALE_REPEAT];
         
         if (index > 2) {
             CAAnimation *onceAnimation = [self onceAnimationAtIndex:index];
-            [subView.layer addAnimation:onceAnimation forKey:KEY_ANIMATION_SCALE_ONECE];
+            [subView.layer addAnimation:onceAnimation forKey:FG_KEY_ANIMATION_SCALE_ONECE];
         }
     }
     
@@ -160,8 +162,8 @@ static FGProgressHUD *sharedView;
 - (void)stopAnimation
 {
     for (UIView *subView in self.hudView.subviews) {
-        [subView.layer removeAnimationForKey:KEY_ANIMATION_SCALE_REPEAT];
-        [subView.layer removeAnimationForKey:KEY_ANIMATION_SCALE_ONECE];
+        [subView.layer removeAnimationForKey:FG_KEY_ANIMATION_SCALE_REPEAT];
+        [subView.layer removeAnimationForKey:FG_KEY_ANIMATION_SCALE_ONECE];
     }
     
     _isVisible = NO;
@@ -243,7 +245,7 @@ static FGProgressHUD *sharedView;
 #pragma mark - Coordinate Calculation
 - (CGFloat)xCoordinateAtIndex:(NSInteger)index
 {
-    CGFloat radian = DEGREE_TO_RADIAN(index*45);
+    CGFloat radian = FG_DEGREE_TO_RADIAN(index*45);
     CGFloat x = (120.0f/2-_radius)*(1-cosf(radian));
     
     return x;
@@ -251,17 +253,50 @@ static FGProgressHUD *sharedView;
 
 - (CGFloat)yCoordinateAtIndex:(NSInteger)index
 {
-    CGFloat radian = DEGREE_TO_RADIAN(index*45);
+    CGFloat radian = FG_DEGREE_TO_RADIAN(index*45);
     CGFloat y = (120.0f/2-_radius)*(1-sinf(radian));
     
     return y;
 }
 
-#pragma mark - Super Method
-- (void)layoutSubviews
-{
-    [super layoutSubviews];
-    
+#pragma mark - Notifications
+- (void)registerNotifications {
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(deviceOrientationDidChange:) name:UIDeviceOrientationDidChangeNotification object:nil];
 }
+
+- (void)unregisterNotifications {
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
+}
+
+- (void)deviceOrientationDidChange:(NSNotification *)notification {
+    UIView *superview = self.superview;
+    if (!superview) {
+        return;
+    } else {
+        [self setTransformForCurrentOrientation:YES];
+    }
+}
+
+- (void)setTransformForCurrentOrientation:(BOOL)animated {
+    if (self.superview) {
+        self.frame = CGRectMake(0, 0, self.superview.bounds.size.width, self.superview.bounds.size.height);
+        [self setNeedsDisplay];
+    }
+    
+    CGFloat size = 120;
+    CGFloat x = (self.bounds.size.width - size)/2;
+    CGFloat y = (self.bounds.size.height - size)/2;
+    
+    if (animated) {
+        [UIView beginAnimations:nil context:nil];
+    }
+    
+    _hudView.frame = CGRectMake(x, y, size, size);
+    
+    if (animated) {
+        [UIView commitAnimations];
+    }
+}
+
 
 @end

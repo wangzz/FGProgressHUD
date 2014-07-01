@@ -15,10 +15,9 @@
 
 typedef NS_ENUM(NSUInteger,FGProgressHUDMaskType) {
     FGProgressHUDMaskTypeNone = 1, // allow user interactions while HUD is displayed
-    FGProgressHUDMaskTypeClear, // don't allow
-    FGProgressHUDMaskTypeBlack, // don't allow and dim the UI in the back of the HUD
+    FGProgressHUDMaskTypeClear, // don't allow user interactions, it's the default value
+    FGProgressHUDMaskTypeBlack, // don't allow user interactions and dim the UI in the back of the HUD
 };
-
 
 
 @interface FGProgressHUD : UIView
