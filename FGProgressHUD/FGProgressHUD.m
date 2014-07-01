@@ -18,16 +18,55 @@
 
 @interface FGProgressHUD ()
 {
-    UIView          *_view;
     CGFloat         _radius;            //旋转的小圆圈最大半径
     CGFloat         _duration;          //旋转一圈所用时间
-    BOOL            _isVisible;
 }
+
+@property (nonatomic, assign) BOOL isVisible;
+
+@property (nonatomic, assign) FGProgressHUDMaskType maskType;
+
+@property (nonatomic, strong) UIView *hudView;
 
 @end
 
+static FGProgressHUD *sharedView;
 
 @implementation FGProgressHUD
+
+#pragma mark - Public
++ (void)show
+{
+    NSAssert([NSThread isMainThread], ([NSString stringWithFormat:@"%s should running on main thread",__func__]));
+    
+    [[self class] showWithMaskType:FGProgressHUDMaskTypeClear];
+}
+
++ (void)showWithMaskType:(FGProgressHUDMaskType)maskType
+{
+    NSAssert([NSThread isMainThread], ([NSString stringWithFormat:@"%s should running on main thread",__func__]));
+
+    sharedView = [[self alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
+    sharedView.maskType = maskType;
+    
+    [sharedView startAnimation];
+}
+
++ (void)dismiss
+{
+    NSAssert([NSThread isMainThread], ([NSString stringWithFormat:@"%s should running on main thread",__func__]));
+    
+    [sharedView stopAnimation];
+    
+    [sharedView.hudView removeFromSuperview];
+    [sharedView removeFromSuperview];
+    sharedView = nil;
+}
+
++ (BOOL)isVisible
+{
+    return sharedView.isVisible;
+}
 
 #pragma mark - Init
 - (id)initWithFrame:(CGRect)frame
@@ -47,9 +86,7 @@
 
 - (void)setup
 {
-    _view = [[UIView alloc] initWithFrame:CGRectMake(90, 90, 120, 120)];
-    _view.backgroundColor = [UIColor clearColor];
-    [self addSubview:_view];
+    [self addSubview:self.hudView];
     
     for (NSInteger index = 0; index < 8; index++) {
         CGFloat x = [self xCoordinateAtIndex:index];
@@ -63,37 +100,50 @@
         CATransform3D startTransform = CATransform3DMakeScale(startScale, startScale, 1.0f);
         subView.layer.transform = startTransform;
         
-        [_view addSubview:subView];
+        [self.hudView addSubview:subView];
     }
+    
+    self.backgroundColor = [UIColor clearColor];
 }
 
-#pragma mark - Public
-+ (void)show
+- (void)dealloc
 {
-    
+    self.hudView = nil;
 }
 
-+ (void)showWithMaskType:(FGProgressHUDMaskType)maskType
+#pragma mark - Gets
+- (UIView *)hudView
 {
+    if (!_hudView) {
+        _hudView = [[UIView alloc] initWithFrame:CGRectMake(90, 90, 120, 120)];
+        _hudView.backgroundColor = [UIColor clearColor];
+        _hudView.autoresizingMask = (UIViewAutoresizingFlexibleBottomMargin | UIViewAutoresizingFlexibleTopMargin | UIViewAutoresizingFlexibleRightMargin | UIViewAutoresizingFlexibleLeftMargin);
+    }
     
-}
-
-+ (void)dismiss
-{
-    
-}
-
-+ (BOOL)isVisible
-{
-    
-    return YES;
+    return _hudView;
 }
 
 #pragma mark - Animation
 - (void)startAnimation
 {
-    for (NSInteger index = 0; index < _view.subviews.count; index++) {
-        UIView *subView = [_view.subviews objectAtIndex:index];
+    if(!self.superview){
+        NSEnumerator *frontToBackWindows = [[[UIApplication sharedApplication]windows]reverseObjectEnumerator];
+        
+        for (UIWindow *window in frontToBackWindows)
+            if (window.windowLevel == UIWindowLevelNormal) {
+                [window addSubview:self];
+                break;
+            }
+    }
+    
+    if (self.maskType == FGProgressHUDMaskTypeNone) {
+        self.userInteractionEnabled = NO;
+    } else if (self.maskType == FGProgressHUDMaskTypeBlack) {
+        self.backgroundColor = [UIColor colorWithWhite:0 alpha:0.5];
+    }
+    
+    for (NSInteger index = 0; index < self.hudView.subviews.count; index++) {
+        UIView *subView = [self.hudView.subviews objectAtIndex:index];
         
         CAAnimation *repeatAnimation = [self repeatAnimationAtIndex:index];
         [subView.layer addAnimation:repeatAnimation forKey:KEY_ANIMATION_SCALE_REPEAT];
@@ -107,9 +157,9 @@
     _isVisible = YES;
 }
 
-- (void)removeAnimation
+- (void)stopAnimation
 {
-    for (UIView *subView in _view.subviews) {
+    for (UIView *subView in self.hudView.subviews) {
         [subView.layer removeAnimationForKey:KEY_ANIMATION_SCALE_REPEAT];
         [subView.layer removeAnimationForKey:KEY_ANIMATION_SCALE_ONECE];
     }
@@ -207,5 +257,11 @@
     return y;
 }
 
+#pragma mark - Super Method
+- (void)layoutSubviews
+{
+    [super layoutSubviews];
+    
+}
 
 @end
