@@ -30,13 +30,11 @@
 
 - (IBAction)onStartButtonAction:(UIButton *)sender
 {
-    if (_hud.isAnimating) {
-        [_hud removeAnimation];
-        [_hud removeFromSuperview];
+    if ([FGProgressHUD isVisible]) {
+        [FGProgressHUD dismiss];
         [sender setTitle:@"Start" forState:UIControlStateNormal];
     } else {
-        _hud = [[FGProgressHUD alloc] initWithFrame:CGRectMake(10, 30, 300, 300)];
-        [self.view addSubview:_hud];
+        [FGProgressHUD show];
         [sender setTitle:@"Stop" forState:UIControlStateNormal];
     }
 }

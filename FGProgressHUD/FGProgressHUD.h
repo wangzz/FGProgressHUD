@@ -12,16 +12,22 @@
 //支持横竖屏
 //支持键盘弹出
 
+
+typedef NS_ENUM(NSUInteger,FGProgressHUDMaskType) {
+    FGProgressHUDMaskTypeNone = 1, // allow user interactions while HUD is displayed
+    FGProgressHUDMaskTypeClear, // don't allow
+    FGProgressHUDMaskTypeBlack, // don't allow and dim the UI in the back of the HUD
+};
+
+
+
 @interface FGProgressHUD : UIView
 
-- (void)startAnimation;
-- (void)removeAnimation;
++ (void)show;
++ (void)showWithMaskType:(FGProgressHUDMaskType)maskType;
 
-- (void)show;
++ (void)dismiss;
 
-- (void)dismiss;
-
-@property (nonatomic, assign) BOOL isAnimating;
-
++ (BOOL)isVisible;
 
 @end

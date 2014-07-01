@@ -21,6 +21,7 @@
     UIView          *_view;
     CGFloat         _radius;            //旋转的小圆圈最大半径
     CGFloat         _duration;          //旋转一圈所用时间
+    BOOL            _isVisible;
 }
 
 @end
@@ -28,6 +29,7 @@
 
 @implementation FGProgressHUD
 
+#pragma mark - Init
 - (id)initWithFrame:(CGRect)frame
 {
     self = [super initWithFrame:frame];
@@ -65,14 +67,26 @@
     }
 }
 
-- (void)show
+#pragma mark - Public
++ (void)show
 {
     
 }
 
-- (void)dismiss
++ (void)showWithMaskType:(FGProgressHUDMaskType)maskType
 {
     
+}
+
++ (void)dismiss
+{
+    
+}
+
++ (BOOL)isVisible
+{
+    
+    return YES;
 }
 
 #pragma mark - Animation
@@ -90,7 +104,7 @@
         }
     }
     
-    _isAnimating = YES;
+    _isVisible = YES;
 }
 
 - (void)removeAnimation
@@ -100,7 +114,7 @@
         [subView.layer removeAnimationForKey:KEY_ANIMATION_SCALE_ONECE];
     }
     
-    _isAnimating = NO;
+    _isVisible = NO;
 }
 
 - (CAAnimation *)repeatAnimationAtIndex:(NSInteger)index
