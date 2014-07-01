@@ -8,10 +8,6 @@
 
 #import <UIKit/UIKit.h>
 
-//TODO:
-//支持横竖屏
-//支持键盘弹出
-//ARC/MRC
 
 typedef NS_ENUM(NSUInteger,FGProgressHUDMaskType) {
     FGProgressHUDMaskTypeNone = 1, // allow user interactions while HUD is displayed
