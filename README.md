@@ -3,7 +3,7 @@ FGProgressHUD
 
 FGProgressHUD是一个用于iOS平台的等待界面，具有使用简单的特点。效果如下图所示：
 
-![FGProgressHUD](FGProgressHUD.gif)
+<img src="FGProgressHUD.gif" width="320" height="568">
 
 实现的过程中或多或少的参考了以下开源项目：
 
@@ -22,9 +22,11 @@ FGProgressHUD是一个用于iOS平台的等待界面，具有使用简单的特�
 ##Usage
 
 * 包含文件
-	主文件为`FGProgressHUD.h`和`FGProgressHUD.m`。将上述文件包含到你的工程中即可。
+
+	主文件为`FGProgressHUD.h`和`FGProgressHUD.m`，将上述文件包含到你的工程中即可。
 	
 * 调用接口
+
 	提供了四个对外接口：
 ```objective-c
 + (void)show;
@@ -37,6 +39,7 @@ FGProgressHUD是一个用于iOS平台的等待界面，具有使用简单的特�
 ```	
 
 * 类型
+
 	共有三种类型：
 ```objective-c
 typedef NS_ENUM(NSUInteger,FGProgressHUDMaskType) {
@@ -44,10 +47,13 @@ typedef NS_ENUM(NSUInteger,FGProgressHUDMaskType) {
     FGProgressHUDMaskTypeClear, // don't allow user interactions, it's the default value
     FGProgressHUDMaskTypeBlack, // don't allow user interactions and dim the UI in the back of the HUD
 };
+
 ```
 
 	其中，`FGProgressHUDMaskTypeNone`允许和HUD后面的界面交互，其余两个不允许交互；
+	
 	`FGProgressHUDMaskTypeBlack`会显示带黑色背景，其余两个背景为透明色；
+	
 	默认值是`FGProgressHUDMaskTypeClear`。
 
 
