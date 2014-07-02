@@ -1,7 +1,7 @@
 FGProgressHUD
 =============
 
-FGProgressHUD是一个用于iOS平台的等待界面，具有使用简单的特点。效果如下图所示：
+FGProgressHUD是一个用于iOS平台的等待界面，具有使用简单，横竖屏的时候能够自动调整位置的特点。效果如下图所示：
 
 <img src="FGProgressHUD.gif" width="320" height="568">
 
