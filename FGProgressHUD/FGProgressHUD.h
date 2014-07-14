@@ -24,16 +24,23 @@ typedef NS_ENUM(NSUInteger, FGProgressHUDShapeType) {
 
 @interface FGProgressHUD : UIView
 
-//show method with default value FGProgressHUDMaskTypeNone and FGProgressHUDShapeCircle.
+/**
+ *  show method with default value FGProgressHUDMaskTypeNone 
+ *  and FGProgressHUDShapeCircle.
+ */
 + (void)show;
 + (void)showWithDuration:(NSTimeInterval)duration;
 
-//show method with default value FGProgressHUDShapeCircle.
+/**
+ *  show method with default value FGProgressHUDShapeCircle.
+ */
 + (void)showWithMaskType:(FGProgressHUDMaskType)maskType;
 + (void)showWithMaskType:(FGProgressHUDMaskType)maskType
                 duration:(NSTimeInterval)duration;
 
-//show method with default value FGProgressHUDMaskTypeNone
+/**
+ *  show method with default value FGProgressHUDMaskTypeNone.
+ */
 + (void)showWithShapeType:(FGProgressHUDShapeType)shapeType;
 + (void)showWithShapeType:(FGProgressHUDShapeType)shapeType
                  duration:(NSTimeInterval)duration;

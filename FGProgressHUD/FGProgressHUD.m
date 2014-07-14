@@ -8,6 +8,7 @@
 
 #import "FGProgressHUD.h"
 
+#define FG_DIAMETER_FLOAT_VALUE     120.0f
 
 #define FG_M_PI 3.14159265358979323846264338327950288
 #define FG_DEGREE_TO_RADIAN(angle) (angle * (FG_M_PI/180))
@@ -16,10 +17,13 @@
 #define FG_KEY_ANIMATION_SCALE_ONECE      @"animation.transform.once"
 
 
+
+
+
 @interface FGProgressHUD ()
 {
     CGFloat         _radius;            //旋转的小圆圈最大半径
-    CGFloat         _duration;          //旋转一圈所用时间
+    CGFloat         _cycleDuration;     //旋转一个周期所用时间
 }
 
 @property (nonatomic, assign) BOOL isVisible;
@@ -41,7 +45,7 @@ static FGProgressHUD *sharedView;
 #pragma mark - Public
 + (void)show
 {
-    [[self class] showWithMaskType:FGProgressHUDMaskTypeNone];
+    [[self class] showWithDuration:0];
 }
 
 + (void)showWithDuration:(NSTimeInterval)duration
@@ -87,9 +91,10 @@ static FGProgressHUD *sharedView;
 {
     NSAssert([NSThread isMainThread], ([NSString stringWithFormat:@"%s should running on main thread",__func__]));
     
-    sharedView = [[self alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
-    sharedView.maskType = maskType;
-    sharedView.shapeType = shapeType;
+    sharedView = [[self alloc] initWithFrame:[[UIScreen mainScreen] bounds]
+                                    maskType:maskType
+                                   shapeType:shapeType
+                                    duration:duration];
     
     [sharedView startAnimation];
 }
@@ -113,25 +118,74 @@ static FGProgressHUD *sharedView;
 }
 
 #pragma mark - Init
+
 - (id)initWithFrame:(CGRect)frame
 {
     self = [super initWithFrame:frame];
     if (self) {
         // Initialization code
-        _radius = 6;
-        _duration = 1.5f;
-        
-        [self setup];
-        
         [self registerNotifications];
     }
     return self;
 }
 
+- (id)initWithFrame:(CGRect)frame
+           maskType:(FGProgressHUDMaskType)maskType
+          shapeType:(FGProgressHUDShapeType)shapeType
+           duration:(NSTimeInterval)duration
+{
+    self = [self initWithFrame:frame];
+    if (self) {
+        
+        _radius = 6;
+        _cycleDuration = 1.5f;
+        
+        _maskType = maskType;
+        _shapeType = shapeType;
+        _duration = duration;
+        
+        [self setup];
+    }
+    
+    return self;
+}
+
 - (void)setup
 {
-    [self addSubview:self.hudView];
+    switch (_shapeType) {
+        case FGProgressHUDShapeCircle:
+            [self setupCircleView];
+            break;
+        case FGProgressHUDShapeLinear:
+            [self setupLinearView];
+            break;
+            
+        default:
+            break;
+    }
     
+    [self addSubview:self.hudView];
+    self.backgroundColor = [UIColor clearColor];
+    
+    if(!self.superview){
+        NSEnumerator *frontToBackWindows = [[[UIApplication sharedApplication]windows]reverseObjectEnumerator];
+        
+        for (UIWindow *window in frontToBackWindows)
+            if (window.windowLevel == UIWindowLevelNormal) {
+                [window addSubview:self];
+                break;
+            }
+    }
+    
+    if (self.maskType == FGProgressHUDMaskTypeNone) {
+        self.userInteractionEnabled = NO;
+    } else if (self.maskType == FGProgressHUDMaskTypeBlack) {
+        self.backgroundColor = [UIColor colorWithWhite:0 alpha:0.5];
+    }
+}
+
+- (void)setupCircleView
+{
     for (NSInteger index = 0; index < 8; index++) {
         CGFloat x = [self xCoordinateAtIndex:index];
         CGFloat y = [self yCoordinateAtIndex:index];
@@ -140,14 +194,25 @@ static FGProgressHUD *sharedView;
         subView.layer.masksToBounds = YES;
         subView.backgroundColor = [UIColor colorWithRed:42.0f/255 green:121.0f/255 blue:251.0f/255 alpha:1.0f];
         
-        CGFloat startScale = [self startScaleAtIndex:index];
+        CGFloat startScale = [self circleStartScaleAtIndex:index];
         CATransform3D startTransform = CATransform3DMakeScale(startScale, startScale, 1.0f);
         subView.layer.transform = startTransform;
         
         [self.hudView addSubview:subView];
     }
-    
-    self.backgroundColor = [UIColor clearColor];
+}
+
+- (void)setupLinearView
+{
+    CGFloat y = (FG_DIAMETER_FLOAT_VALUE - _radius*2)/2;
+    CGFloat xSace = (FG_DIAMETER_FLOAT_VALUE - _radius*2*6)/5;
+    for (NSInteger index = 0; index < 6; index++) {
+        CGFloat x = index*(xSace + _radius*2);
+        UIView *subView = [[UIView alloc] initWithFrame:CGRectMake(x, y, _radius*2, _radius*2)];
+        subView.backgroundColor = [UIColor redColor];
+        self.hudView.backgroundColor = [UIColor greenColor];
+        [self.hudView addSubview:subView];
+    }
 }
 
 - (void)dealloc
@@ -172,76 +237,95 @@ static FGProgressHUD *sharedView;
 #pragma mark - Animation
 - (void)startAnimation
 {
-    if(!self.superview){
-        NSEnumerator *frontToBackWindows = [[[UIApplication sharedApplication]windows]reverseObjectEnumerator];
-        
-        for (UIWindow *window in frontToBackWindows)
-            if (window.windowLevel == UIWindowLevelNormal) {
-                [window addSubview:self];
-                break;
-            }
-    }
-    
-    if (self.maskType == FGProgressHUDMaskTypeNone) {
-        self.userInteractionEnabled = NO;
-    } else if (self.maskType == FGProgressHUDMaskTypeBlack) {
-        self.backgroundColor = [UIColor colorWithWhite:0 alpha:0.5];
-    }
-    
-    for (NSInteger index = 0; index < self.hudView.subviews.count; index++) {
-        UIView *subView = [self.hudView.subviews objectAtIndex:index];
-        
-        CAAnimation *repeatAnimation = [self repeatAnimationAtIndex:index];
-        [subView.layer addAnimation:repeatAnimation forKey:FG_KEY_ANIMATION_SCALE_REPEAT];
-        
-        if (index > 2) {
-            CAAnimation *onceAnimation = [self onceAnimationAtIndex:index];
-            [subView.layer addAnimation:onceAnimation forKey:FG_KEY_ANIMATION_SCALE_ONECE];
-        }
+    switch (_shapeType) {
+        case FGProgressHUDShapeCircle:
+            [self startCircleAnimation];
+            break;
+        case FGProgressHUDShapeLinear:
+            [self startLinearAnimation];
+            break;
+        default:
+            break;
     }
     
     _isVisible = YES;
 }
 
+- (void)startCircleAnimation
+{
+    for (NSInteger index = 0; index < self.hudView.subviews.count; index++) {
+        UIView *subView = [self.hudView.subviews objectAtIndex:index];
+        
+        CAAnimation *repeatAnimation = [self circleRepeatAnimationAtIndex:index];
+        [subView.layer addAnimation:repeatAnimation forKey:FG_KEY_ANIMATION_SCALE_REPEAT];
+        
+        if (index > 2) {
+            CAAnimation *onceAnimation = [self circleOnceAnimationAtIndex:index];
+            [subView.layer addAnimation:onceAnimation forKey:FG_KEY_ANIMATION_SCALE_ONECE];
+        }
+    }
+}
+
+
+- (void)startLinearAnimation
+{
+    for (NSInteger index = 0; index < self.hudView.subviews.count; index++) {
+        UIView *subView = [self.hudView.subviews objectAtIndex:index];
+        CFTimeInterval beginTime = CACurrentMediaTime() + 0.2f*index;
+        
+        NSValue *start = [NSValue valueWithCATransform3D:CATransform3DMakeScale(0.0f, 0.0f, 1.0f)];
+        NSValue *middle = [NSValue valueWithCATransform3D:CATransform3DIdentity];
+        NSValue *end = [NSValue valueWithCATransform3D:CATransform3DMakeScale(0.0f, 0.0f, 1.0f)];
+        
+        CAKeyframeAnimation *scaleAnimation = [CAKeyframeAnimation animationWithKeyPath:@"transform"];
+        scaleAnimation.values = @[start,middle,end];
+        scaleAnimation.beginTime = beginTime;
+        scaleAnimation.duration = _cycleDuration;
+        scaleAnimation.repeatCount = INT_MAX;
+        scaleAnimation.calculationMode = kCAAnimationLinear;
+        
+        [subView.layer addAnimation:scaleAnimation forKey:FG_KEY_ANIMATION_SCALE_REPEAT];
+    }
+}
+
 - (void)stopAnimation
 {
     for (UIView *subView in self.hudView.subviews) {
-        [subView.layer removeAnimationForKey:FG_KEY_ANIMATION_SCALE_REPEAT];
-        [subView.layer removeAnimationForKey:FG_KEY_ANIMATION_SCALE_ONECE];
+        [subView.layer removeAllAnimations];
     }
     
     _isVisible = NO;
 }
 
-- (CAAnimation *)repeatAnimationAtIndex:(NSInteger)index
+- (CAAnimation *)circleRepeatAnimationAtIndex:(NSInteger)index
 {
     CFTimeInterval beginTime = CACurrentMediaTime() + 0.2f*index;
     CAKeyframeAnimation *scaleAnimation = [CAKeyframeAnimation animationWithKeyPath:@"transform"];
     scaleAnimation.values = @[[NSValue valueWithCATransform3D:CATransform3DMakeScale(0.0f, 0.0f, 1.0f)],[NSValue valueWithCATransform3D:CATransform3DIdentity],[NSValue valueWithCATransform3D:CATransform3DMakeScale(0.0f, 0.0f, 1.0f)]];
     scaleAnimation.beginTime = beginTime;
-    scaleAnimation.duration = _duration;
+    scaleAnimation.duration = _cycleDuration;
     scaleAnimation.repeatCount = INT_MAX;
     scaleAnimation.calculationMode = kCAAnimationLinear;
     
     return scaleAnimation;
 }
 
-- (CAAnimation *)onceAnimationAtIndex:(NSInteger)index
+- (CAAnimation *)circleOnceAnimationAtIndex:(NSInteger)index
 {
-    CGFloat startScale = [self startScaleAtIndex:index];
+    CGFloat startScale = [self circleStartScaleAtIndex:index];
     CATransform3D startTransform = CATransform3DMakeScale(startScale, startScale, 1.0f);
-    CATransform3D middleTransform = [self transformMiddleAtIndex:index];
+    CATransform3D middleTransform = [self circleTransformMiddleAtIndex:index];
     
     CAKeyframeAnimation *scaleAnimation = [CAKeyframeAnimation animationWithKeyPath:@"transform"];
     scaleAnimation.values = @[[NSValue valueWithCATransform3D:startTransform],[NSValue valueWithCATransform3D:middleTransform],[NSValue valueWithCATransform3D:CATransform3DMakeScale(0.0f, 0.0f, 1.0f)]];
-    scaleAnimation.duration = _duration*(2-startScale);
+    scaleAnimation.duration = _cycleDuration*(2-startScale);
     scaleAnimation.calculationMode = kCAAnimationLinear;
     scaleAnimation.fillMode = kCAFillModeRemoved;
     
     return scaleAnimation;
 }
 
-- (CGFloat)startScaleAtIndex:(NSInteger)index
+- (CGFloat)circleStartScaleAtIndex:(NSInteger)index
 {
     CGFloat startValue;
     switch (index) {
@@ -268,7 +352,7 @@ static FGProgressHUD *sharedView;
     return startValue;
 }
 
-- (CATransform3D)transformMiddleAtIndex:(NSInteger)index
+- (CATransform3D)circleTransformMiddleAtIndex:(NSInteger)index
 {
     CATransform3D middleTransform;
     switch (index) {
@@ -290,7 +374,7 @@ static FGProgressHUD *sharedView;
 - (CGFloat)xCoordinateAtIndex:(NSInteger)index
 {
     CGFloat radian = FG_DEGREE_TO_RADIAN(index*45);
-    CGFloat x = (120.0f/2-_radius)*(1-cosf(radian));
+    CGFloat x = (FG_DIAMETER_FLOAT_VALUE/2-_radius)*(1-cosf(radian));
     
     return x;
 }
@@ -298,7 +382,7 @@ static FGProgressHUD *sharedView;
 - (CGFloat)yCoordinateAtIndex:(NSInteger)index
 {
     CGFloat radian = FG_DEGREE_TO_RADIAN(index*45);
-    CGFloat y = (120.0f/2-_radius)*(1-sinf(radian));
+    CGFloat y = (FG_DIAMETER_FLOAT_VALUE/2-_radius)*(1-sinf(radian));
     
     return y;
 }
@@ -327,7 +411,7 @@ static FGProgressHUD *sharedView;
         [self setNeedsDisplay];
     }
     
-    CGFloat size = 120;
+    CGFloat size = FG_DIAMETER_FLOAT_VALUE;
     CGFloat x = (self.bounds.size.width - size)/2;
     CGFloat y = (self.bounds.size.height - size)/2;
     
