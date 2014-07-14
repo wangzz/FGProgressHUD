@@ -34,7 +34,7 @@
         [FGProgressHUD dismiss];
         [sender setTitle:@"Start" forState:UIControlStateNormal];
     } else {
-        [FGProgressHUD showWithMaskType:FGProgressHUDMaskTypeNone];
+        [FGProgressHUD showWithShapeType:FGProgressHUDShapeLinear];
         [sender setTitle:@"Stop" forState:UIControlStateNormal];
     }
 }
