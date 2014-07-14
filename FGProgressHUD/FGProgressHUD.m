@@ -8,15 +8,13 @@
 
 #import "FGProgressHUD.h"
 
-#define FG_DIAMETER_FLOAT_VALUE     120.0f
 
 #define FG_M_PI 3.14159265358979323846264338327950288
 #define FG_DEGREE_TO_RADIAN(angle) (angle * (FG_M_PI/180))
 
 #define FG_KEY_ANIMATION_SCALE_REPEAT     @"animation.transform.repeat"
 #define FG_KEY_ANIMATION_SCALE_ONECE      @"animation.transform.once"
-
-
+#define FG_KEY_ANIMATION_COLOR            @"animation.color"
 
 
 
@@ -24,6 +22,7 @@
 {
     CGFloat         _radius;            //旋转的小圆圈最大半径
     CGFloat         _cycleDuration;     //旋转一个周期所用时间
+    CGFloat         _hudWidth;          //HUD方形base view宽度
 }
 
 @property (nonatomic, assign) BOOL isVisible;
@@ -99,12 +98,12 @@ static FGProgressHUD *sharedView;
     [sharedView startAnimation];
 }
 
-
-
 + (void)dismiss
 {
     NSAssert([NSThread isMainThread], ([NSString stringWithFormat:@"%s should running on main thread",__func__]));
-    
+    [self cancelPreviousPerformRequestsWithTarget:self
+                                         selector:@selector(dismiss)
+                                           object:nil];
     [sharedView stopAnimation];
     
     [sharedView.hudView removeFromSuperview];
@@ -136,13 +135,13 @@ static FGProgressHUD *sharedView;
 {
     self = [self initWithFrame:frame];
     if (self) {
-        
-        _radius = 6;
-        _cycleDuration = 1.5f;
-        
         _maskType = maskType;
         _shapeType = shapeType;
         _duration = duration;
+        
+        _radius = 6;
+        _cycleDuration = 1.5f;
+        _hudWidth = 120.0f;
         
         [self setup];
     }
@@ -165,7 +164,7 @@ static FGProgressHUD *sharedView;
     }
     
     [self addSubview:self.hudView];
-    self.backgroundColor = [UIColor clearColor];
+    self.backgroundColor = [UIColor greenColor];
     
     if(!self.superview){
         NSEnumerator *frontToBackWindows = [[[UIApplication sharedApplication]windows]reverseObjectEnumerator];
@@ -204,20 +203,32 @@ static FGProgressHUD *sharedView;
 
 - (void)setupLinearView
 {
-    CGFloat y = (FG_DIAMETER_FLOAT_VALUE - _radius*2)/2;
-    CGFloat xSace = (FG_DIAMETER_FLOAT_VALUE - _radius*2*6)/5;
+    CGFloat y = (_hudWidth - _radius*2)/2;
+    CGFloat xSace = (_hudWidth - _radius*2*6)/5;
     for (NSInteger index = 0; index < 6; index++) {
         CGFloat x = index*(xSace + _radius*2);
         UIView *subView = [[UIView alloc] initWithFrame:CGRectMake(x, y, _radius*2, _radius*2)];
-        subView.backgroundColor = [UIColor redColor];
-        self.hudView.backgroundColor = [UIColor greenColor];
+        subView.layer.cornerRadius = _radius;
+        subView.layer.masksToBounds = YES;
+        
+        if (index == 0) {
+            subView.layer.transform = CATransform3DMakeScale(0.85f, 0.85f, 1.0f);
+            subView.backgroundColor = [UIColor colorWithRed:99.0f/255 green:174.0f/255 blue:240.0f/255 alpha:1.0f];
+        } else if (index == 1) {
+            subView.layer.transform = CATransform3DIdentity;
+            subView.backgroundColor = [UIColor colorWithRed:17.0f/255 green:140.0f/255 blue:239.0f/255 alpha:1.0f];
+        } else {
+            subView.layer.transform = CATransform3DMakeScale(0.7f, 0.7f, 1.0f);
+            subView.backgroundColor = [UIColor colorWithRed:181.0f/255 green:213.0f/255 blue:242.0f/255 alpha:1.0f];
+        }
+        
         [self.hudView addSubview:subView];
     }
 }
 
 - (void)dealloc
 {
-    self.hudView = nil;
+    _hudView = nil;
     [self unregisterNotifications];
 }
 
@@ -226,7 +237,7 @@ static FGProgressHUD *sharedView;
 {
     if (!_hudView) {
         _hudView = [[UIView alloc] initWithFrame:CGRectZero];
-        _hudView.backgroundColor = [UIColor clearColor];
+        _hudView.backgroundColor = [UIColor redColor];
         _hudView.autoresizingMask = (UIViewAutoresizingFlexibleBottomMargin | UIViewAutoresizingFlexibleTopMargin | UIViewAutoresizingFlexibleRightMargin | UIViewAutoresizingFlexibleLeftMargin);
         [self setTransformForCurrentOrientation:NO];
     }
@@ -249,6 +260,12 @@ static FGProgressHUD *sharedView;
     }
     
     _isVisible = YES;
+    
+    if (_duration > 0) {
+        [[self class] performSelector:@selector(dismiss)
+                           withObject:nil
+                           afterDelay:_duration];
+    }
 }
 
 - (void)startCircleAnimation
@@ -271,20 +288,33 @@ static FGProgressHUD *sharedView;
 {
     for (NSInteger index = 0; index < self.hudView.subviews.count; index++) {
         UIView *subView = [self.hudView.subviews objectAtIndex:index];
-        CFTimeInterval beginTime = CACurrentMediaTime() + 0.2f*index;
-        
-        NSValue *start = [NSValue valueWithCATransform3D:CATransform3DMakeScale(0.0f, 0.0f, 1.0f)];
-        NSValue *middle = [NSValue valueWithCATransform3D:CATransform3DIdentity];
-        NSValue *end = [NSValue valueWithCATransform3D:CATransform3DMakeScale(0.0f, 0.0f, 1.0f)];
+        CFTimeInterval beginTime = CACurrentMediaTime() + (index - 1)*(_cycleDuration/self.hudView.subviews.count);
         
         CAKeyframeAnimation *scaleAnimation = [CAKeyframeAnimation animationWithKeyPath:@"transform"];
-        scaleAnimation.values = @[start,middle,end];
+        scaleAnimation.values = @[[NSValue valueWithCATransform3D:CATransform3DIdentity],
+                                  [NSValue valueWithCATransform3D:CATransform3DMakeScale(0.85f, 0.85f, 1.0f)],
+                                  [NSValue valueWithCATransform3D:CATransform3DMakeScale(0.7f, 0.7f, 1.0f)],
+                                  [NSValue valueWithCATransform3D:CATransform3DMakeScale(0.7f, 0.7f, 1.0f)],
+                                  [NSValue valueWithCATransform3D:CATransform3DMakeScale(0.7f, 0.7f, 1.0f)],
+                                  [NSValue valueWithCATransform3D:CATransform3DMakeScale(0.7f, 0.7f, 1.0f)]];
         scaleAnimation.beginTime = beginTime;
         scaleAnimation.duration = _cycleDuration;
         scaleAnimation.repeatCount = INT_MAX;
         scaleAnimation.calculationMode = kCAAnimationLinear;
-        
         [subView.layer addAnimation:scaleAnimation forKey:FG_KEY_ANIMATION_SCALE_REPEAT];
+
+        CAKeyframeAnimation *colorAnimation = [CAKeyframeAnimation animationWithKeyPath:@"backgroundColor"];
+        colorAnimation.values = @[(id)[UIColor colorWithRed:17.0f/255 green:140.0f/255 blue:239.0f/255 alpha:1.0f].CGColor,
+                                  (id)[UIColor colorWithRed:99.0f/255 green:174.0f/255 blue:240.0f/255 alpha:1.0f].CGColor,
+                                  (id)[UIColor colorWithRed:181.0f/255 green:213.0f/255 blue:242.0f/255 alpha:1.0f].CGColor,
+                                  (id)[UIColor colorWithRed:181.0f/255 green:213.0f/255 blue:242.0f/255 alpha:1.0f].CGColor,
+                                  (id)[UIColor colorWithRed:181.0f/255 green:213.0f/255 blue:242.0f/255 alpha:1.0f].CGColor,
+                                  (id)[UIColor colorWithRed:181.0f/255 green:213.0f/255 blue:242.0f/255 alpha:1.0f].CGColor];
+        colorAnimation.beginTime = beginTime;
+        colorAnimation.duration = _cycleDuration;
+        colorAnimation.repeatCount = INT_MAX;
+        colorAnimation.calculationMode = kCAAnimationLinear;
+        [subView.layer addAnimation:colorAnimation forKey:FG_KEY_ANIMATION_COLOR];
     }
 }
 
@@ -374,7 +404,7 @@ static FGProgressHUD *sharedView;
 - (CGFloat)xCoordinateAtIndex:(NSInteger)index
 {
     CGFloat radian = FG_DEGREE_TO_RADIAN(index*45);
-    CGFloat x = (FG_DIAMETER_FLOAT_VALUE/2-_radius)*(1-cosf(radian));
+    CGFloat x = (_hudWidth/2-_radius)*(1-cosf(radian));
     
     return x;
 }
@@ -382,7 +412,7 @@ static FGProgressHUD *sharedView;
 - (CGFloat)yCoordinateAtIndex:(NSInteger)index
 {
     CGFloat radian = FG_DEGREE_TO_RADIAN(index*45);
-    CGFloat y = (FG_DIAMETER_FLOAT_VALUE/2-_radius)*(1-sinf(radian));
+    CGFloat y = (_hudWidth/2-_radius)*(1-sinf(radian));
     
     return y;
 }
@@ -407,19 +437,24 @@ static FGProgressHUD *sharedView;
 
 - (void)setTransformForCurrentOrientation:(BOOL)animated {
     if (self.superview) {
-        self.frame = CGRectMake(0, 0, self.superview.bounds.size.width, self.superview.bounds.size.height);
-        [self setNeedsDisplay];
+        UIInterfaceOrientation orientation = [[UIApplication sharedApplication] statusBarOrientation];
+        if(UIInterfaceOrientationIsLandscape(orientation)) {
+            self.frame = CGRectMake(0, 0, self.superview.bounds.size.height, self.superview.bounds.size.width);
+        } else {
+            self.frame = CGRectMake(0, 0, self.superview.bounds.size.width, self.superview.bounds.size.height);
+        }
     }
+
+    NSLog(@"%@",NSStringFromCGRect(self.frame));
     
-    CGFloat size = FG_DIAMETER_FLOAT_VALUE;
-    CGFloat x = (self.bounds.size.width - size)/2;
-    CGFloat y = (self.bounds.size.height - size)/2;
+    CGFloat x = (self.frame.size.width - _hudWidth)/2;
+    CGFloat y = (self.frame.size.height - _hudWidth)/2;
     
     if (animated) {
         [UIView beginAnimations:nil context:nil];
     }
     
-    _hudView.frame = CGRectMake(x, y, size, size);
+    _hudView.frame = CGRectMake(x, y, _hudWidth, _hudWidth);
     
     if (animated) {
         [UIView commitAnimations];
