@@ -26,6 +26,10 @@
 
 @property (nonatomic, assign) FGProgressHUDMaskType maskType;
 
+@property (nonatomic, assign) FGProgressHUDShapeType shapeType;
+
+@property (nonatomic, assign) NSTimeInterval duration;
+
 @property (nonatomic, strong) UIView *hudView;
 
 @end
@@ -37,20 +41,60 @@ static FGProgressHUD *sharedView;
 #pragma mark - Public
 + (void)show
 {
-    NSAssert([NSThread isMainThread], ([NSString stringWithFormat:@"%s should running on main thread",__func__]));
-    
-    [[self class] showWithMaskType:FGProgressHUDMaskTypeClear];
+    [[self class] showWithMaskType:FGProgressHUDMaskTypeNone];
+}
+
++ (void)showWithDuration:(NSTimeInterval)duration
+{
+    [[self class] showWithMaskType:FGProgressHUDMaskTypeNone duration:duration];
 }
 
 + (void)showWithMaskType:(FGProgressHUDMaskType)maskType
 {
-    NSAssert([NSThread isMainThread], ([NSString stringWithFormat:@"%s should running on main thread",__func__]));
+    [[self class] showWithMaskType:maskType duration:0];
+}
 
++ (void)showWithMaskType:(FGProgressHUDMaskType)maskType
+                duration:(NSTimeInterval)duration
+{
+    [[self class] showWithMaskType:maskType
+                         shapeType:FGProgressHUDShapeCircle
+                          duration:duration];
+}
+
++ (void)showWithShapeType:(FGProgressHUDShapeType)shapeType
+{
+    [[self class] showWithShapeType:shapeType duration:0];
+}
+
++ (void)showWithShapeType:(FGProgressHUDShapeType)shapeType
+                 duration:(NSTimeInterval)duration
+{
+    [[self class] showWithMaskType:FGProgressHUDMaskTypeNone
+                         shapeType:shapeType
+                          duration:duration];
+}
+
++ (void)showWithMaskType:(FGProgressHUDMaskType)maskType
+               shapeType:(FGProgressHUDShapeType)shapeType
+{
+    [[self class] showWithMaskType:maskType shapeType:shapeType duration:0];
+}
+
++ (void)showWithMaskType:(FGProgressHUDMaskType)maskType
+               shapeType:(FGProgressHUDShapeType)shapeType
+                duration:(NSTimeInterval)duration
+{
+    NSAssert([NSThread isMainThread], ([NSString stringWithFormat:@"%s should running on main thread",__func__]));
+    
     sharedView = [[self alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
     sharedView.maskType = maskType;
+    sharedView.shapeType = shapeType;
     
     [sharedView startAnimation];
 }
+
+
 
 + (void)dismiss
 {

@@ -11,7 +11,7 @@
 
 @interface ViewController ()
 {
-    FGProgressHUD *_hud;
+
 }
 
 @end
@@ -34,7 +34,7 @@
         [FGProgressHUD dismiss];
         [sender setTitle:@"Start" forState:UIControlStateNormal];
     } else {
-        [FGProgressHUD showWithMaskType:FGProgressHUDMaskTypeClear];
+        [FGProgressHUD showWithMaskType:FGProgressHUDMaskTypeNone];
         [sender setTitle:@"Stop" forState:UIControlStateNormal];
     }
 }
