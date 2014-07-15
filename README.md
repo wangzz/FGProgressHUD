@@ -27,10 +27,34 @@ FGProgressHUD是一个用于iOS平台的等待界面，具有使用简单，横�
 	
 * 调用接口
 
-	提供了四个对外接口：
+	接口以使用致简为原则，提供了以下对外接口：
 ```objective-c
+/**
+ *  show method with default value FGProgressHUDMaskTypeNone 
+ *  and FGProgressHUDShapeCircle.
+ */
 + (void)show;
++ (void)showWithDuration:(NSTimeInterval)duration;
+
+/**
+ *  show method with default value FGProgressHUDShapeCircle.
+ */
 + (void)showWithMaskType:(FGProgressHUDMaskType)maskType;
++ (void)showWithMaskType:(FGProgressHUDMaskType)maskType
+                duration:(NSTimeInterval)duration;
+
+/**
+ *  show method with default value FGProgressHUDMaskTypeNone.
+ */
++ (void)showWithShapeType:(FGProgressHUDShapeType)shapeType;
++ (void)showWithShapeType:(FGProgressHUDShapeType)shapeType
+                 duration:(NSTimeInterval)duration;
+
++ (void)showWithMaskType:(FGProgressHUDMaskType)maskType
+               shapeType:(FGProgressHUDShapeType)shapeType;
++ (void)showWithMaskType:(FGProgressHUDMaskType)maskType
+               shapeType:(FGProgressHUDShapeType)shapeType
+                duration:(NSTimeInterval)duration;
 
 + (void)dismiss;
 
@@ -38,9 +62,27 @@ FGProgressHUD是一个用于iOS平台的等待界面，具有使用简单，横�
 
 ```	
 
-* 类型
 
-	共有三种类型：
+* 形状种类
+
+	目前有两种形状：
+```objective-c
+typedef NS_ENUM(NSUInteger, FGProgressHUDShapeType) {
+    FGProgressHUDShapeCircle, //circle HUD,it's the default value
+    FGProgressHUDShapeLinear, //linear HUD
+};
+```
+
+其中，
+
+`FGProgressHUDShapeCircle`为原型的无限循环HUD，是`默认值`；
+
+`FGProgressHUDShapeLinear`为水平直线型无限循环HUD；
+
+
+* 背景种类
+
+	背景共有三种类型：
 ```objective-c
 typedef NS_ENUM(NSUInteger,FGProgressHUDMaskType) {
     FGProgressHUDMaskTypeNone = 1, // allow user interactions while HUD is displayed
@@ -51,11 +93,11 @@ typedef NS_ENUM(NSUInteger,FGProgressHUDMaskType) {
 ```
 其中，
 
-`FGProgressHUDMaskTypeNone`允许和HUD后面的界面交互，其余两个不允许交互；
+`FGProgressHUDMaskTypeNone`允许和HUD后面的界面交互，其余两个不允许交互，是`默认值`；
  
 `FGProgressHUDMaskTypeBlack`会显示带黑色背景，其余两个背景为透明色；
 
-`FGProgressHUDMaskTypeClear`是默认值。
+`FGProgressHUDMaskTypeClear`无背景；
 
 
 ##License
