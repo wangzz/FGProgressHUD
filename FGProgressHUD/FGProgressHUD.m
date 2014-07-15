@@ -90,6 +90,10 @@ static FGProgressHUD *sharedView;
 {
     NSAssert([NSThread isMainThread], ([NSString stringWithFormat:@"%s should running on main thread",__func__]));
     
+    if (sharedView) {
+        [[self class] dismiss];
+    }
+    
     sharedView = [[self alloc] initWithFrame:[[UIScreen mainScreen] bounds]
                                     maskType:maskType
                                    shapeType:shapeType
@@ -116,8 +120,14 @@ static FGProgressHUD *sharedView;
     return sharedView.isVisible;
 }
 
-#pragma mark - Init
+#pragma mark - Dealloc
+- (void)dealloc
+{
+    _hudView = nil;
+    [self unregisterNotifications];
+}
 
+#pragma mark - Init
 - (id)initWithFrame:(CGRect)frame
 {
     self = [super initWithFrame:frame];
@@ -151,6 +161,15 @@ static FGProgressHUD *sharedView;
 
 - (void)setup
 {
+    if(!self.superview){
+        NSEnumerator *frontToBackWindows = [[[UIApplication sharedApplication]windows]reverseObjectEnumerator];
+        for (UIWindow *window in frontToBackWindows)
+            if (window.windowLevel == UIWindowLevelNormal) {
+                [window addSubview:self];
+                break;
+            }
+    }
+    
     switch (_shapeType) {
         case FGProgressHUDShapeCircle:
             _hudSubviewCounts = 8;
@@ -166,16 +185,6 @@ static FGProgressHUD *sharedView;
     }
     
     [self addSubview:self.hudView];
-    
-    if(!self.superview){
-        NSEnumerator *frontToBackWindows = [[[UIApplication sharedApplication]windows]reverseObjectEnumerator];
-        
-        for (UIWindow *window in frontToBackWindows)
-            if (window.windowLevel == UIWindowLevelNormal) {
-                [window addSubview:self];
-                break;
-            }
-    }
     
     if (self.maskType == FGProgressHUDMaskTypeNone) {
         self.userInteractionEnabled = NO;
@@ -211,12 +220,6 @@ static FGProgressHUD *sharedView;
         
         [self.hudView addSubview:subView];
     }
-}
-
-- (void)dealloc
-{
-    _hudView = nil;
-    [self unregisterNotifications];
 }
 
 #pragma mark - Gets
@@ -264,7 +267,7 @@ static FGProgressHUD *sharedView;
         UIView *subView = [self.hudView.subviews objectAtIndex:index];
         
         NSInteger i = self.hudView.subviews.count - 1;
-        CFTimeInterval beginTime = CACurrentMediaTime() + (index-i)*(_cycleDuration/self.hudView.subviews.count);
+        CFTimeInterval beginTime = CACurrentMediaTime() + (index - i)*(_cycleDuration/self.hudView.subviews.count);
         CAKeyframeAnimation *scaleAnimation = [CAKeyframeAnimation animationWithKeyPath:@"transform"];
         scaleAnimation.values = @[[NSValue valueWithCATransform3D:CATransform3DMakeScale(0.4f, 0.4f, 1.0f)],
                                   [NSValue valueWithCATransform3D:CATransform3DMakeScale(0.7f, 0.7f, 1.0f)],
@@ -283,20 +286,21 @@ static FGProgressHUD *sharedView;
     }
 }
 
-
 - (void)startLinearAnimation
 {
     for (NSInteger index = 0; index < self.hudView.subviews.count; index++) {
         UIView *subView = [self.hudView.subviews objectAtIndex:index];
-        CFTimeInterval beginTime = CACurrentMediaTime() - index*(_cycleDuration/self.hudView.subviews.count);
+        
+        NSInteger i = self.hudView.subviews.count - 1;
+        CFTimeInterval beginTime = CACurrentMediaTime() + (index - i)*(_cycleDuration/self.hudView.subviews.count);
         
         CAKeyframeAnimation *scaleAnimation = [CAKeyframeAnimation animationWithKeyPath:@"transform"];
-        scaleAnimation.values = @[[NSValue valueWithCATransform3D:CATransform3DMakeScale(0.85f, 0.85f, 1.0f)],
+        scaleAnimation.values = @[[NSValue valueWithCATransform3D:CATransform3DMakeScale(0.7f, 0.7f, 1.0f)],
+                                  [NSValue valueWithCATransform3D:CATransform3DMakeScale(0.7f, 0.7f, 1.0f)],
+                                  [NSValue valueWithCATransform3D:CATransform3DMakeScale(0.7f, 0.7f, 1.0f)],
+                                  [NSValue valueWithCATransform3D:CATransform3DMakeScale(0.7f, 0.7f, 1.0f)],
                                   [NSValue valueWithCATransform3D:CATransform3DIdentity],
-                                  [NSValue valueWithCATransform3D:CATransform3DMakeScale(0.7f, 0.7f, 1.0f)],
-                                  [NSValue valueWithCATransform3D:CATransform3DMakeScale(0.7f, 0.7f, 1.0f)],
-                                  [NSValue valueWithCATransform3D:CATransform3DMakeScale(0.7f, 0.7f, 1.0f)],
-                                  [NSValue valueWithCATransform3D:CATransform3DMakeScale(0.7f, 0.7f, 1.0f)]];
+                                  [NSValue valueWithCATransform3D:CATransform3DMakeScale(0.85f, 0.85f, 1.0f)]];
         scaleAnimation.beginTime = beginTime;
         scaleAnimation.duration = _cycleDuration;
         scaleAnimation.repeatCount = INT_MAX;
@@ -304,12 +308,13 @@ static FGProgressHUD *sharedView;
         [subView.layer addAnimation:scaleAnimation forKey:FG_KEY_ANIMATION_SCALE];
         
         CAKeyframeAnimation *colorAnimation = [CAKeyframeAnimation animationWithKeyPath:@"backgroundColor"];
-        colorAnimation.values = @[(id)FG_RGBA(99.0f, 174.0f, 240.0f, 1.0f).CGColor,
-                                  (id)FG_RGBA(17.0f, 140.0f, 239.0f, 1.0f).CGColor,
+        colorAnimation.values = @[(id)FG_RGBA(181.0f, 213.0f, 242.0f, 1.0f).CGColor,
                                   (id)FG_RGBA(181.0f, 213.0f, 242.0f, 1.0f).CGColor,
                                   (id)FG_RGBA(181.0f, 213.0f, 242.0f, 1.0f).CGColor,
                                   (id)FG_RGBA(181.0f, 213.0f, 242.0f, 1.0f).CGColor,
-                                  (id)FG_RGBA(181.0f, 213.0f, 242.0f, 1.0f).CGColor];
+                                  (id)FG_RGBA(53.0f, 136.0f, 244.0f, 1.0f).CGColor,
+                                  (id)FG_RGBA(110.0f, 172.0f, 244.0f, 1.0f).CGColor,
+                                  ];
         colorAnimation.beginTime = beginTime;
         colorAnimation.duration = _cycleDuration;
         colorAnimation.repeatCount = INT_MAX;
@@ -347,7 +352,10 @@ static FGProgressHUD *sharedView;
 
 #pragma mark - Notifications
 - (void)registerNotifications {
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(deviceOrientationDidChange:) name:UIDeviceOrientationDidChangeNotification object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(deviceOrientationDidChange:)
+                                                 name:UIDeviceOrientationDidChangeNotification
+                                               object:nil];
 }
 
 - (void)unregisterNotifications {
@@ -355,25 +363,38 @@ static FGProgressHUD *sharedView;
 }
 
 - (void)deviceOrientationDidChange:(NSNotification *)notification {
-    UIView *superview = self.superview;
-    if (!superview) {
+    if (!self.superview) {
         return;
-    } else {
-        [self setTransformForCurrentOrientation:YES];
     }
+    
+    [self setTransformForCurrentOrientation:YES];
 }
 
 - (void)setTransformForCurrentOrientation:(BOOL)animated {
-    if (self.superview) {
-        UIInterfaceOrientation orientation = [[UIApplication sharedApplication] statusBarOrientation];
-        if(UIInterfaceOrientationIsLandscape(orientation)) {
-            self.frame = CGRectMake(0, 0, self.superview.bounds.size.height, self.superview.bounds.size.width);
-        } else {
-            self.frame = CGRectMake(0, 0, self.superview.bounds.size.width, self.superview.bounds.size.height);
-        }
+    if (!self.superview) {
+        return;
     }
 
-    NSLog(@"%@",NSStringFromCGRect(self.frame));
+    UIInterfaceOrientation orientation = [[UIApplication sharedApplication] statusBarOrientation];
+    CGFloat rotateAngle;
+    switch (orientation) {
+        case UIInterfaceOrientationPortrait:
+            rotateAngle = 0.0;
+            break;
+        case UIInterfaceOrientationPortraitUpsideDown:
+            rotateAngle = M_PI;
+            break;
+            
+        case UIInterfaceOrientationLandscapeLeft:
+            rotateAngle = -M_PI/2.0f;
+            break;
+            
+        case UIInterfaceOrientationLandscapeRight:
+            rotateAngle = M_PI/2.0f;
+            break;
+        default:
+            break;
+    }
     
     CGFloat x = (self.frame.size.width - _hudWidth)/2;
     CGFloat y = (self.frame.size.height - _hudWidth)/2;
@@ -383,11 +404,11 @@ static FGProgressHUD *sharedView;
     }
     
     _hudView.frame = CGRectMake(x, y, _hudWidth, _hudWidth);
+    _hudView.transform = CGAffineTransformMakeRotation(rotateAngle);
     
     if (animated) {
         [UIView commitAnimations];
     }
 }
-
 
 @end
