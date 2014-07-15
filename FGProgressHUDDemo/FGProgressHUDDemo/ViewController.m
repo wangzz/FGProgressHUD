@@ -21,6 +21,7 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     // Do any additional setup after loading the view, typically from a nib.
+    self.view.backgroundColor = [UIColor lightGrayColor];
 }
 
 - (void)didReceiveMemoryWarning {
@@ -34,7 +35,7 @@
         [FGProgressHUD dismiss];
         [sender setTitle:@"Start" forState:UIControlStateNormal];
     } else {
-        [FGProgressHUD showWithShapeType:FGProgressHUDShapeCircle duration:10.0f];
+        [FGProgressHUD showWithShapeType:FGProgressHUDShapeLinear duration:10.0f];
         [sender setTitle:@"Stop" forState:UIControlStateNormal];
     }
 }
